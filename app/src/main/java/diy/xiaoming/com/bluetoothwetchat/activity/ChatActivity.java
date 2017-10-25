@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.MenuItem;
@@ -59,15 +60,15 @@ public class ChatActivity extends BaseActivity {
                 case CommonValues.BLUE_TOOTH_READ:
                     byte[] readBuf = (byte[]) msg.obj;
                     String readMessage = new String(readBuf, 0, msg.arg1);
-                    mList.add(new ChatInfo(CommonValues.TAG_LEFT , deviceName, readMessage));
+                    mList.add(new ChatInfo(CommonValues.TAG_LEFT, deviceName, readMessage));
                     mChatAdapter.notifyDataSetChanged();
                     mRecyclerView.smoothScrollToPosition(mList.size());
                     break;
-                case CommonValues.BLUE_TOOTH_WRAITE:
+                case CommonValues.BLUE_TOOTH_WRITE:
                     byte[] writeBuf = (byte[]) msg.obj;
                     // construct a string from the buffer
                     String writeMessage = new String(writeBuf);
-                    mList.add(new ChatInfo(CommonValues.TAG_RIGHT , "我" , writeMessage));
+                    mList.add(new ChatInfo(CommonValues.TAG_RIGHT, "我", writeMessage));
                     mChatAdapter.notifyDataSetChanged();
                     mRecyclerView.smoothScrollToPosition(mList.size());
                     break;
@@ -95,6 +96,7 @@ public class ChatActivity extends BaseActivity {
         mContext = this;
         mEditText = bindWidget(R.id.et_write);
         mRecyclerView = bindWidget(R.id.recyclerView);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
     }
 
     @Override
@@ -143,13 +145,13 @@ public class ChatActivity extends BaseActivity {
 
     public void send(View view) {
         String content = mEditText.getText().toString().trim();
-        if(!TextUtils.isEmpty(content)) {
+        if (!TextUtils.isEmpty(content)) {
             if (mDo == null) {
                 mDo = BluetoothChatDo.getInstance(mHandler);
             }
             mDo.sendData(content.getBytes());
             mEditText.setText("");
-        }else{
+        } else {
             ToastUtils.showShort("发送的消息不能为空");
         }
     }
@@ -175,7 +177,7 @@ public class ChatActivity extends BaseActivity {
 
     private void saveData() {
         SQLiteDatabase db = helper.getWritableDatabase();
-//        db.execSQL();
+        db.execSQL("delete from " + TABLE_NAME + " where " + COLUMN_ID + " = ? ", new String[]{MD5Util.stringToMD5(deviceName + "我")});
         for (ChatInfo chatInfo : mList) {
             ContentValues values = new ContentValues();
             values.put(COLUMN_ID, MD5Util.stringToMD5(deviceName + "我"));
