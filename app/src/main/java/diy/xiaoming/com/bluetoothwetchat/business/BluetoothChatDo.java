@@ -21,7 +21,7 @@ import diy.xiaoming.com.bluetoothwetchat.util.CommonValues;
  */
 
 public class BluetoothChatDo {
-
+    //新增修改
     private int mState;
     private static Handler mHandler;
     public static BluetoothChatDo instance;
