@@ -31,7 +31,7 @@ public class CommonValues {
 
     public final static int BLUE_TOOTH_TOAST = 0x1011;
 
-    public final static int BLUE_TOOTH_WRAITE = 0x1012;
+    public final static int BLUE_TOOTH_WRITE = 0x1012;
 
     public final static int BLUE_TOOTH_READ = 0x1013;
 
