@@ -146,8 +146,9 @@ public class BluetoothChatDo {
                     synchronized (BluetoothChatDo.class) {
                         switch (mState) {
                             case CommonValues.STATE_LISTEN:
-                                break;
                             case CommonValues.STATE_CONNECTING:
+                                sendMessageToUi(CommonValues.BLUE_TOOTH_DIALOG,"正在与"+socket.getRemoteDevice().getName()+"通信");
+                                dataTransfer(socket,socket.getRemoteDevice());
                                 break;
                             case CommonValues.STATE_NONE:
                             case CommonValues.STATE_TRANSFER:
@@ -213,6 +214,7 @@ public class BluetoothChatDo {
                     BluetoothChatDo.this.start();
                     sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST,"设备连接失败/传输关闭");
                     isTransferError = true;
+                    break;
                 }
             }
         }
