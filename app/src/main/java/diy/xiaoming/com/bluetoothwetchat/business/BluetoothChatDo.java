@@ -57,6 +57,7 @@ public class BluetoothChatDo {
     //开启监听
     public synchronized void start() {
         if (mTransferThread != null) {
+            mTransferThread.cancel();
             mTransferThread = null;
         }
         setState(CommonValues.STATE_LISTEN);
@@ -219,7 +220,7 @@ public class BluetoothChatDo {
         public void write(byte[] buffer){
             try {
                 out.write(buffer);
-                mHandler.obtainMessage(CommonValues.BLUE_TOOTH_WRAITE,-1,-1,buffer).sendToTarget();
+                mHandler.obtainMessage(CommonValues.BLUE_TOOTH_WRITE,-1,-1,buffer).sendToTarget();
             } catch (IOException e) {
                 e.printStackTrace();
             }
