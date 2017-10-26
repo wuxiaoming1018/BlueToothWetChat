@@ -28,14 +28,14 @@ public class BluetoothChatDo {
     private BluetoothAdapter mBluetoothAdapter;
     private static final String NAME_SECURE = "BluetoothChatDo";
     private static final UUID MY_UUID_SECURE =
-            UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+            UUID.fromString("fa87c0d0-afae-11de-8a39-0800200c9a66");
 
     //用来连接端口的线程
     private AcceptThread mAcceptThread;
     private TransferThread mTransferThread;
     private ConnectThread mConnectThread;
     private boolean isTransferError = false;
-
+    private int count = 1;
 
     public static BluetoothChatDo getInstance(Handler handler) {
         mHandler = handler;
@@ -67,7 +67,7 @@ public class BluetoothChatDo {
         }
     }
 
-    public synchronized  void stop(){
+    public synchronized void stop() {
         if (mConnectThread != null) {
             mConnectThread.cancel();
             mConnectThread = null;
@@ -83,12 +83,12 @@ public class BluetoothChatDo {
         setState(CommonValues.STATE_NONE);
     }
 
-    public synchronized void connectDevice(String address){
+    public synchronized void connectDevice(String address) {
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-        if (mState== CommonValues.STATE_CONNECTING) {
+        if (mState == CommonValues.STATE_CONNECTING) {
             if (mTransferThread != null) {
                 mTransferThread.cancel();
-                mTransferThread= null;
+                mTransferThread = null;
             }
         }
 
@@ -96,7 +96,7 @@ public class BluetoothChatDo {
             mConnectThread.cancel();
             mConnectThread = null;
         }
-        sendMessageToUi(CommonValues.BLUE_TOOTH_DIALOG,"正在与"+device.getName()+"链接");
+        sendMessageToUi(CommonValues.BLUE_TOOTH_DIALOG, "正在与" + device.getName() + "链接");
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
         setState(CommonValues.STATE_CONNECTING);
@@ -108,8 +108,8 @@ public class BluetoothChatDo {
 
     public void sendData(byte[] bytes) {
         TransferThread transferThread;
-        synchronized (BluetoothChatDo.class){
-            if (mState!= CommonValues.STATE_TRANSFER) {
+        synchronized (BluetoothChatDo.class) {
+            if (mState != CommonValues.STATE_TRANSFER) {
                 return;
             }
             transferThread = mTransferThread;
@@ -136,7 +136,9 @@ public class BluetoothChatDo {
             BluetoothSocket socket = null;
             while (mState != CommonValues.STATE_TRANSFER) {
                 try {
-                    socket = serverSocket.accept();
+                    if (serverSocket != null) {
+                        socket = serverSocket.accept();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                     break;
@@ -147,8 +149,8 @@ public class BluetoothChatDo {
                         switch (mState) {
                             case CommonValues.STATE_LISTEN:
                             case CommonValues.STATE_CONNECTING:
-                                sendMessageToUi(CommonValues.BLUE_TOOTH_DIALOG,"正在与"+socket.getRemoteDevice().getName()+"通信");
-                                dataTransfer(socket,socket.getRemoteDevice());
+                                sendMessageToUi(CommonValues.BLUE_TOOTH_DIALOG, "正在与" + socket.getRemoteDevice().getName() + "通信");
+                                dataTransfer(socket, socket.getRemoteDevice());
                                 break;
                             case CommonValues.STATE_NONE:
                             case CommonValues.STATE_TRANSFER:
@@ -204,31 +206,36 @@ public class BluetoothChatDo {
             //读取数据
             byte[] buffer = new byte[1024];
             int bytes;
-            while(true){
+            while (true) {
                 try {
                     bytes = in.read(buffer);
-                    mHandler.obtainMessage(CommonValues.BLUE_TOOTH_READ,bytes,-1,buffer).sendToTarget();
-                    LogUtils.e("read:"+new String(buffer,0,bytes));
+                    mHandler.obtainMessage(CommonValues.BLUE_TOOTH_READ, bytes, -1, buffer).sendToTarget();
+                    LogUtils.e("read:" + new String(buffer, 0, bytes));
                 } catch (IOException e) {
                     e.printStackTrace();
-                    BluetoothChatDo.this.start();
-                    sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST,"设备连接失败/传输关闭");
+                    if (count < 3) {
+                        BluetoothChatDo.this.start();
+                    } else {
+                        sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST, "设备连接失败/传输关闭");
+                    }
+                    count++;
                     isTransferError = true;
                     break;
                 }
             }
         }
 
-        public void write(byte[] buffer){
+        public void write(byte[] buffer) {
             try {
                 out.write(buffer);
-                mHandler.obtainMessage(CommonValues.BLUE_TOOTH_WRITE,-1,-1,buffer).sendToTarget();
+                mHandler.obtainMessage(CommonValues.BLUE_TOOTH_WRITE, -1, -1, buffer).sendToTarget();
+                LogUtils.e("write:" + new String(buffer));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        public void cancel(){
+        public void cancel() {
             if (socket != null) {
                 try {
                     socket.close();
@@ -256,7 +263,7 @@ public class BluetoothChatDo {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID_SECURE);
             } catch (IOException e) {
                 e.printStackTrace();
-                sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST,"链接失败,请重新连接");
+                sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST, "链接失败,请重新连接");
             }
             socket = tmp;
         }
@@ -274,18 +281,19 @@ public class BluetoothChatDo {
                     socket.close();
                 } catch (IOException e1) {
                     e1.printStackTrace();
-                    LogUtils.e("Could not to close the socket,Error:"+e.getMessage());
+                    LogUtils.e("Could not to close the socket,Error:" + e.getMessage());
                 }
-                sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST,"连接失败，重新开始链接");
+                sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST, "连接失败，重新开始链接");
                 BluetoothChatDo.this.start();
             }
-            synchronized (BluetoothChatDo.class){
+            synchronized (BluetoothChatDo.class) {
                 mConnectThread = null;
             }
             LogUtils.e("connectThread已经连接成功，准备传输数据");
-            dataTransfer(socket,device);
+            dataTransfer(socket, device);
         }
-        public void cancel(){
+
+        public void cancel() {
             if (socket != null) {
                 try {
                     socket.close();
@@ -309,13 +317,13 @@ public class BluetoothChatDo {
             @Override
             public void run() {
                 if (!isTransferError) {
-                    sendMessageToUi(CommonValues.BLUE_TOOTH_SUCCESS,device.getName());
+                    sendMessageToUi(CommonValues.BLUE_TOOTH_SUCCESS, device.getName());
                 }
             }
-        },300);
+        }, 300);
     }
 
-    private void sendMessageToUi(int what,String content){
+    private void sendMessageToUi(int what, String content) {
         Message message = Message.obtain();
         message.what = what;
         message.obj = content;

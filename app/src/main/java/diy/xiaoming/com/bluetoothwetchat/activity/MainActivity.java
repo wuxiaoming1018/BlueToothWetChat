@@ -77,7 +77,6 @@ public class MainActivity extends BaseActivity implements OnRefreshListener, OnI
                     Intent intent = new Intent(mContext, ChatActivity.class);
                     intent.putExtra(CommonValues.CHART_EXTRA,name);
                     startActivity(intent);
-                    close();
                     break;
             }
         }
@@ -309,9 +308,14 @@ public class MainActivity extends BaseActivity implements OnRefreshListener, OnI
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        close();
-        unregisterReceiver(stateReceiver);
         mDao.stop();
+        unregisterReceiver(stateReceiver);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        close();
     }
 
     private void close() {
