@@ -28,7 +28,7 @@ public class BluetoothChatDo {
     private BluetoothAdapter mBluetoothAdapter;
     private static final String NAME_SECURE = "BluetoothChatDo";
     private static final UUID MY_UUID_SECURE =
-            UUID.fromString("fa87c0d0-afae-11de-8a39-0800200c9a66");
+            UUID.fromString("fa87c0d0-abcd-11de-8a39-0800200c9a66");
 
     //用来连接端口的线程
     private AcceptThread mAcceptThread;
@@ -121,12 +121,25 @@ public class BluetoothChatDo {
         private final BluetoothServerSocket serverSocket;
 
         private AcceptThread() {
+            LogUtils.e("AcceptThread类的构造函数");
             BluetoothServerSocket tmp = null;
             try {
                 tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE, MY_UUID_SECURE);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+           /* try {
+                Method method = mBluetoothAdapter.getClass().getMethod("listenUsingRfcommOn",new Class[]{int.class});
+                try {
+                    tmp = (BluetoothServerSocket) method.invoke(mBluetoothAdapter,new Object[]{29});
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }*/
             serverSocket = tmp;
         }
 
@@ -135,9 +148,11 @@ public class BluetoothChatDo {
             super.run();
             BluetoothSocket socket = null;
             while (mState != CommonValues.STATE_TRANSFER) {
+                LogUtils.e("已进入AcceptThread.run()方法里面的死循环");
                 try {
                     if (serverSocket != null) {
                         socket = serverSocket.accept();
+                        LogUtils.e("已进入AcceptThread.run()方法里面的死循环,name="+socket.getRemoteDevice().getName());
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -145,12 +160,15 @@ public class BluetoothChatDo {
                 }
 
                 if (socket != null) {
+                    LogUtils.e("已进入AcceptThread.run()方法里面的socket非空判断");
                     synchronized (BluetoothChatDo.class) {
+                        LogUtils.e("已进入AcceptThread.run()方法里面的程序锁");
                         switch (mState) {
                             case CommonValues.STATE_LISTEN:
                             case CommonValues.STATE_CONNECTING:
                                 sendMessageToUi(CommonValues.BLUE_TOOTH_DIALOG, "正在与" + socket.getRemoteDevice().getName() + "通信");
                                 dataTransfer(socket, socket.getRemoteDevice());
+                                LogUtils.e("已进入AcceptThread.run()方法里面switch()判断");
                                 break;
                             case CommonValues.STATE_NONE:
                             case CommonValues.STATE_TRANSFER:
@@ -160,11 +178,13 @@ public class BluetoothChatDo {
                                     e.printStackTrace();
                                     LogUtils.e("Could not close this socket,error:" + e.getMessage());
                                 }
+                                LogUtils.e("已进入AcceptThread.run()方法里面switch()判断");
                                 break;
                         }
                     }
                 }
             }
+            LogUtils.e("跳出已进入AcceptThread.run()方法里面的死循环,mState:"+mState);
         }
 
         public void cancel() {
@@ -185,6 +205,7 @@ public class BluetoothChatDo {
 
         public TransferThread(BluetoothSocket socket) {
             this.socket = socket;
+            LogUtils.e("TransferThread类的构造函数");
             OutputStream mOutputStream = null;
             InputStream mInputStream = null;
             if (socket != null) {
@@ -203,10 +224,12 @@ public class BluetoothChatDo {
         @Override
         public void run() {
             super.run();
+            LogUtils.e("TransferThread.run()方法");
             //读取数据
             byte[] buffer = new byte[1024];
             int bytes;
             while (true) {
+                LogUtils.e("TransferThread.run()方法里面的死循环");
                 try {
                     bytes = in.read(buffer);
                     mHandler.obtainMessage(CommonValues.BLUE_TOOTH_READ, bytes, -1, buffer).sendToTarget();
@@ -223,6 +246,7 @@ public class BluetoothChatDo {
                     break;
                 }
             }
+            LogUtils.e("跳出TransferThread.run()方法里面的死循环");
         }
 
         public void write(byte[] buffer) {
@@ -261,7 +285,9 @@ public class BluetoothChatDo {
             BluetoothSocket tmp = null;
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID_SECURE);
-            } catch (IOException e) {
+//                Method method = device.getClass().getMethod("createRfcommSocket",new Class[]{int.class});
+//                tmp = (BluetoothSocket) method.invoke(device,new Object[]{29});
+            } catch (Exception e) {
                 e.printStackTrace();
                 sendMessageToUi(CommonValues.BLUE_TOOTH_TOAST, "链接失败,请重新连接");
             }
