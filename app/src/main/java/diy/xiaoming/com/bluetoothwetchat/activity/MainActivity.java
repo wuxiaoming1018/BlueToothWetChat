@@ -15,6 +15,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.Switch;
@@ -58,31 +59,31 @@ public class MainActivity extends BaseActivity implements OnRefreshListener, OnI
     private ProgressDialog progressDialog;
     private BluetoothChatDo mDao;
 
-    private Handler mHandler = new Handler(){
+    private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            switch(msg.what){
+            switch (msg.what) {
                 case CommonValues.BLUE_TOOTH_DIALOG:
-                    showProgressDialog((String)msg.obj);
+                    showProgressDialog((String) msg.obj);
                     break;
                 case CommonValues.BLUE_TOOTH_TOAST:
                     dismissProgressDialog();
-                    ToastUtils.showShort((String)msg.obj);
+                    ToastUtils.showShort((String) msg.obj);
                     break;
                 case CommonValues.BLUE_TOOTH_SUCCESS:
                     dismissProgressDialog();
-                    String name = (String)msg.obj;
-                    ToastUtils.showShort("连接设备"+name+"成功");
+                    String name = (String) msg.obj;
+                    ToastUtils.showShort("连接设备" + name + "成功");
                     Intent intent = new Intent(mContext, ChatActivity.class);
-                    intent.putExtra(CommonValues.CHART_EXTRA,name);
+                    intent.putExtra(CommonValues.CHART_EXTRA, name);
                     startActivity(intent);
                     break;
             }
         }
     };
 
-    private void showProgressDialog(String content){
+    private void showProgressDialog(String content) {
         if (progressDialog == null) {
             progressDialog = new ProgressDialog(mContext);
         }
@@ -92,8 +93,8 @@ public class MainActivity extends BaseActivity implements OnRefreshListener, OnI
         progressDialog.show();
     }
 
-    private void dismissProgressDialog(){
-        if (progressDialog != null&&progressDialog.isShowing()) {
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
             progressDialog.dismiss();
         }
     }
@@ -118,7 +119,6 @@ public class MainActivity extends BaseActivity implements OnRefreshListener, OnI
         showText = bindWidget(R.id.show);
         showText.setVisibility(View.GONE);
     }
-
 
 
     @Override
@@ -322,5 +322,15 @@ public class MainActivity extends BaseActivity implements OnRefreshListener, OnI
         mBluetoothAdapter.cancelDiscovery();
         mRefresh.setRefreshing(false);
         unregisterReceiver(mReceiver);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (KeyEvent.KEYCODE_BACK == keyCode && event.getRepeatCount() == 0) {
+            if (stateReceiver != null) {
+                unregisterReceiver(stateReceiver);
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
